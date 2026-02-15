@@ -1,0 +1,73 @@
+{
+  "family": "orders-log-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "app",
+      "image": "<APP_IMAGE>",
+      "essential": true,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/orders",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "app"
+        }
+      },
+      "mountPoints": [
+        {
+          "sourceVolume": "fluentbit-buffer",
+          "containerPath": "/fluent-bit-buffer"
+        }
+      ]
+    },
+    {
+      "name": "fluentbit",
+      "image": "amazon/aws-for-fluent-bit:latest",
+      "essential": true,
+      "firelensConfiguration": {
+        "type": "fluentbit"
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/orders",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "fluentbit"
+        }
+      },
+      "mountPoints": [
+        {
+          "sourceVolume": "fluentbit-buffer",
+          "containerPath": "/fluent-bit-buffer"
+        },
+        {
+          "sourceVolume": "fluentbit-db",
+          "containerPath": "/fluent-bit-db"
+        }
+      ],
+      "portMappings": [
+        {
+          "containerPort": 2020,
+          "hostPort": 2020,
+          "protocol": "tcp"
+        }
+      ]
+    }
+  ],
+  "volumes": [
+    {
+      "name": "fluentbit-buffer",
+      "host": {}
+    },
+    {
+      "name": "fluentbit-db",
+      "host": {}
+    }
+  ]
+}
