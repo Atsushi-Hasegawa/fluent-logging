@@ -1,0 +1,45 @@
+name: Update aws-for-fluent-bit Version
+
+on:
+  schedule:
+    # Run everyday at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Check and Update aws-for-fluent-bit
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./.github/scripts/update-aws-for-fluent-bit.sh
+
+      - name: Create Pull Request
+        if: steps.check.outputs.updates_detected == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore(deps): update aws-for-fluent-bit to ${{ steps.check.outputs.latest_version }}"
+          committer: GitHub <noreply@github.com>
+          author: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
+          branch: update-aws-for-fluent-bit-${{ steps.check.outputs.latest_version }}
+          title: "chore(deps): update aws-for-fluent-bit to ${{ steps.check.outputs.latest_version }}"
+          body: |
+            A new version of `aws-for-fluent-bit` has been released: `${{ steps.check.outputs.latest_version }}`.
+
+            This PR automatically updates all references of `aws-for-fluent-bit` in the repository config files to the latest version.
+
+            Please review the changes and merge if appropriate.
+          labels: |
+            dependencies
+            aws-for-fluent-bit
