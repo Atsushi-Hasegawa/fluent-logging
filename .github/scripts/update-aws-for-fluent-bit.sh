@@ -4,11 +4,11 @@
 #
 set -euo pipefail
 
-# 1. Fetch latest release tag from GitHub
+# 1. Fetch latest release tag from GitHub (filtering for v3.x tags)
 if [ -n "${GITHUB_TOKEN:-}" ]; then
-  LATEST_TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/aws/aws-for-fluent-bit/releases/latest | jq -r '.tag_name')
+  LATEST_TAG=$(curl -s -H "Authorization: token $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/aws/aws-for-fluent-bit/releases | jq -r '[.[] | select(.prerelease==false and .draft==false and (.tag_name | startswith("v3.")))] | first | .tag_name')
 else
-  LATEST_TAG=$(curl -s -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/aws/aws-for-fluent-bit/releases/latest | jq -r '.tag_name')
+  LATEST_TAG=$(curl -s -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/aws/aws-for-fluent-bit/releases | jq -r '[.[] | select(.prerelease==false and .draft==false and (.tag_name | startswith("v3.")))] | first | .tag_name')
 fi
 
 if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
@@ -18,7 +18,7 @@ fi
 
 # Remove leading 'v' if present (e.g. v3.4.7 -> 3.4.7)
 LATEST_VERSION="${LATEST_TAG#v}"
-echo "Latest aws-for-fluent-bit version found: $LATEST_VERSION"
+echo "Latest aws-for-fluent-bit 3.x version found: $LATEST_VERSION"
 
 # 2. Search for existing aws-for-fluent-bit image tags in json/yaml/yml files
 UPDATED=false
@@ -42,6 +42,12 @@ for file in $files; do
   fi
   
   echo "Checking $file (current version: $CURRENT_VERSION)"
+  
+  # Only update if the current version in the file is a 3.x version
+  if [[ ! "$CURRENT_VERSION" =~ ^3\. ]]; then
+    echo "Skipping $file: version '$CURRENT_VERSION' is not a 3.x version."
+    continue
+  fi
   
   if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
     echo "Updating $file: $CURRENT_VERSION -> $LATEST_VERSION"
