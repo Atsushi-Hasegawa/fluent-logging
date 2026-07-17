@@ -28,7 +28,7 @@
     },
     {
       "name": "fluentbit",
-      "image": "amazon/aws-for-fluent-bit:3.4.6",
+      "image": "amazon/aws-for-fluent-bit:3.4.8",
       "essential": true,
       "firelensConfiguration": {
         "type": "fluentbit"
